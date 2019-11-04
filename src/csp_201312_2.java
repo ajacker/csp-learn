@@ -1,6 +1,6 @@
 import java.util.Scanner;
 
-public class csp_201303_2 {
+public class csp_201312_2 {
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
         String str = scanner.nextLine();
