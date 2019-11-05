@@ -9,15 +9,23 @@ import java.util.stream.Collectors;
  * @date 2019/11/5 9:06
  */
 public class csp_201909_3 {
-    static Pixel[][] pixels;
-    static Pixel[][] blocks;
+    /**
+     * 所有像素
+     */
+    private static Pixel[][] pixels;
+    /**
+     * 所有色块
+     */
+    private static Pixel[][] blocks;
 
     public static void main(String[] args) {
         //宽-列
         int m = InputReader.nextInt();
         //高-行
         int n = InputReader.nextInt();
+        //色块的宽
         int p = InputReader.nextInt();
+        //色块的高
         int q = InputReader.nextInt();
         pixels = new Pixel[n][m];
         //横向像素块个数
@@ -79,7 +87,6 @@ public class csp_201909_3 {
 
         }
         //输出结果ASCII
-        //System.out.println(result.toString());
         System.out.print(toASCII(result.toString()));
     }
 
@@ -98,15 +105,29 @@ public class csp_201909_3 {
 
     }
 
+    /**
+     * 像素类+色块类共用
+     */
     static class Pixel {
         int r, g, b;
 
+        /**
+         * 构造函数
+         *
+         * @param r 红色分量
+         * @param g 绿色分量
+         * @param b 蓝色分量
+         */
         Pixel(int r, int g, int b) {
             this.r = r;
             this.g = g;
             this.b = b;
         }
 
+        /**
+         * 构造函数
+         * @param s #aabbcc 或者 #abc 或者 #a 形式的字符串
+         */
         Pixel(String s) {
             char[] array = s.toCharArray();
             switch (array.length) {
@@ -123,15 +144,20 @@ public class csp_201909_3 {
                     b = Integer.parseInt(new String(new char[]{q, q}), 16);
                     break;
                 case 7:
-                    r = Integer.parseInt(String.copyValueOf(array, 1, 2), 16);
-                    g = Integer.parseInt(String.copyValueOf(array, 3, 2), 16);
-                    b = Integer.parseInt(String.copyValueOf(array, 5, 2), 16);
+                    int value = Integer.parseInt(s.replace("#", ""), 16);
+                    r = (value & 0xff0000) >> 16;
+                    g = (value & 0x00ff00) >> 8;
+                    b = (value & 0x0000ff);
                     break;
                 default:
                     break;
             }
         }
 
+        /**
+         * 获得本色块的颜色设置代码
+         * @return 字符串形式的颜色设置代码
+         */
         public String getBackStr() {
             if (r == 0 && g == 0 && b == 0) {
                 //如果是黑色则可以直接重置背景色
@@ -143,6 +169,11 @@ public class csp_201909_3 {
             }
         }
 
+        /**
+         * 比较两个像素是否相等
+         * @param obj 另一个像素
+         * @return 是否相等
+         */
         @Override
         public boolean equals(Object obj) {
             if (obj instanceof Pixel) {
@@ -153,6 +184,9 @@ public class csp_201909_3 {
         }
     }
 
+    /**
+     * 输入加速类
+     */
     static class InputReader {
         private static StringTokenizer tokenizer = null;
         private static BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
