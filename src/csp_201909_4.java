@@ -1,6 +1,5 @@
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Scanner;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -10,10 +9,6 @@ import java.util.stream.IntStream;
  * @date 2019/11/8 11:44
  */
 public class csp_201909_4 {
-    /**
-     * 分数，第一维度是商品类型编号，第二维度是这一类型的商品
-     * 初始都为0分
-     */
     static ArrayList<ArrayList<Info>> scores;
 
     public static void main(String[] args) {
@@ -58,21 +53,28 @@ public class csp_201909_4 {
                     for (int j = 0; j < m; j++) {
                         minAmount[j] = scanner.nextInt();
                     }
-                    ArrayList[] selected = new ArrayList[m];
+                    ArrayList<Integer>[] selected = new ArrayList[m];
                     for (int j = 0; j < m; j++) {
-                        selected[j] = new ArrayList<Info>();
+                        selected[j] = new ArrayList<>();
                     }
-                    Map<Integer, List<Info>> collect = IntStream.range(0, m).boxed().flatMap(j -> scores.get(j).stream().sorted().limit(minAmount[j]))
-                            .sorted().limit(K).collect(Collectors.groupingBy(p -> p.type));
-                    for (int b = 0; b < m; b++) {
-                        List<Info> infos = collect.getOrDefault(b, null);
-                        if (infos == null) {
-                            System.out.println(-1);
-                        } else {
-                            System.out.println(infos.stream().mapToInt(l -> l.id).boxed().map(String::valueOf)
-                                    .collect(Collectors.joining(" ")));
+                    List<Info> collect = IntStream.range(0, m).boxed().flatMap(j -> scores.get(j).stream()).sorted()
+                            .collect(Collectors.toList());
+                    for (int j = 0; j < collect.size() && K > 0; j++) {
+                        Info cur = collect.get(j);
+                        if (minAmount[cur.type] > 0) {
+                            selected[cur.type].add(cur.id);
+                            minAmount[cur.type]--;
+                            K--;
                         }
                     }
+                    for (int j = 0; j < m; j++) {
+                        if (selected[j].isEmpty()) {
+                            System.out.println(-1);
+                        } else {
+                            System.out.println(selected[j].stream().map(String::valueOf).collect(Collectors.joining(" ")));
+                        }
+                    }
+
                     break;
                 default:
                     break;
