@@ -1,77 +1,97 @@
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import java.io.*;
+import java.util.*;
 
 /**
  * @author ajacker
  * @date 2019/11/8 11:44
  */
 public class csp_201909_4 {
-    static ArrayList<ArrayList<Info>> scores;
+    /**
+     * 自排序的set
+     */
+    static TreeSet<Info> scores;
+    /**
+     * 维护一个set集合，存在于其中的被标记为删除
+     */
+    static HashSet<Integer>[] deleted;
+    /**
+     * 加速输出
+     */
+    static PrintWriter out = new PrintWriter(new OutputStreamWriter(System.out));
 
     public static void main(String[] args) {
-        Scanner scanner = new Scanner(System.in);
-        int m = scanner.nextInt();
-        int n = scanner.nextInt();
-        scores = new ArrayList<>(m);
-        //初始化数据
-        IntStream.range(0, m).mapToObj(ArrayList<Info>::new).forEach(scores::add);
+        int m = InputReader.nextInt();
+        int n = InputReader.nextInt();
+        scores = new TreeSet<>();
+        deleted = new HashSet[m];
+        for (int i = 0; i < m; i++) {
+            deleted[i] = new HashSet<>();
+        }
         for (int i = 0; i < n; i++) {
-            int id = scanner.nextInt();
-            int score = scanner.nextInt();
+            int id = InputReader.nextInt();
+            int score = InputReader.nextInt();
             for (int j = 0; j < m; j++) {
-                scores.get(j).add(new Info(j, id, score));
+                scores.add(new Info(j, id, score));
             }
         }
         //操作数
-        int op = scanner.nextInt();
+        int op = InputReader.nextInt();
         for (int i = 0; i < op; i++) {
-            int o = scanner.nextInt();
+            int o = InputReader.nextInt();
             int type;
             int commodity;
             int score;
             switch (o) {
                 case 1:
                     //添加商品
-                    type = scanner.nextInt();
-                    commodity = scanner.nextInt();
-                    score = scanner.nextInt();
-                    scores.get(type).add(new Info(type, commodity, score));
+                    type = InputReader.nextInt();
+                    commodity = InputReader.nextInt();
+                    score = InputReader.nextInt();
+                    scores.add(new Info(type, commodity, score));
+                    deleted[type].remove(commodity);
+
                     break;
                 case 2:
-                    type = scanner.nextInt();
-                    commodity = scanner.nextInt();
                     //删除商品
-                    scores.get(type).remove(new Info(commodity));
+                    type = InputReader.nextInt();
+                    commodity = InputReader.nextInt();
+                    deleted[type].add(commodity);
                     break;
                 case 3:
                     //不超过K个
-                    int K = scanner.nextInt();
+                    int K = InputReader.nextInt();
+                    //minAmount就是最多每个类型的有几个
                     int[] minAmount = new int[m];
                     for (int j = 0; j < m; j++) {
-                        minAmount[j] = scanner.nextInt();
+                        minAmount[j] = InputReader.nextInt();
                     }
+                    //维护了一个选出来的结果
                     ArrayList<Integer>[] selected = new ArrayList[m];
                     for (int j = 0; j < m; j++) {
                         selected[j] = new ArrayList<>();
                     }
-                    List<Info> collect = IntStream.range(0, m).boxed().flatMap(j -> scores.get(j).stream()).sorted()
-                            .collect(Collectors.toList());
-                    for (int j = 0; j < collect.size() && K > 0; j++) {
-                        Info cur = collect.get(j);
-                        if (minAmount[cur.type] > 0) {
+                    Iterator<Info> it = scores.iterator();
+                    while (it.hasNext() && K > 0) {
+                        Info cur = it.next();
+                        //没被删除且此类可选
+                        if (!deleted[cur.type].contains(cur.id) && minAmount[cur.type] > 0) {
                             selected[cur.type].add(cur.id);
+                            //减少此类可选数量
                             minAmount[cur.type]--;
+                            //减少总可选数量
                             K--;
                         }
                     }
+                    //输出每一类的选择结果
                     for (int j = 0; j < m; j++) {
                         if (selected[j].isEmpty()) {
-                            System.out.println(-1);
+                            out.println("-1");
                         } else {
-                            System.out.println(selected[j].stream().map(String::valueOf).collect(Collectors.joining(" ")));
+                            for (Integer v : selected[j]) {
+                                out.print(v);
+                                out.print(" ");
+                            }
+                            out.println();
                         }
                     }
 
@@ -80,6 +100,9 @@ public class csp_201909_4 {
                     break;
             }
         }
+        //记得刷新缓冲区，才会输出
+        out.flush();
+        out.close();
     }
 
     static class Info implements Comparable<Info> {
@@ -93,23 +116,6 @@ public class csp_201909_4 {
             this.score = score;
         }
 
-        public Info(int id) {
-            this.id = id;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-            Info info = (Info) o;
-            return id == info.id;
-        }
-
-
         @Override
         public int compareTo(Info o) {
             if (o.score == this.score) {
@@ -121,6 +127,29 @@ public class csp_201909_4 {
             } else {
                 return o.score - this.score;
             }
+        }
+    }
+
+    /**
+     * io优化：加速读入
+     */
+    static class InputReader {
+        private static BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+        private static StringTokenizer tokenizer = null;
+
+        static String next() {
+            while (tokenizer == null || !tokenizer.hasMoreTokens()) {
+                try {
+                    tokenizer = new StringTokenizer(reader.readLine());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            return tokenizer.nextToken();
+        }
+
+        static int nextInt() {
+            return Integer.parseInt(next());
         }
     }
 }

@@ -8,17 +8,25 @@ public class csp_201803_2 {
         int n = sc.nextInt();
         int L = sc.nextInt();
         int t = sc.nextInt();
+        //存放了所有的小球信息
         ArrayList<Ball> balls = new ArrayList<>();
         for (int i = 0; i < n; i++) {
             balls.add(new Ball(sc.nextInt()));
         }
+        //遍历每一秒时间
         for (int time = 0; time < t; time++) {
+            //遍历所有的小球
             for (Ball ball : balls) {
-                ball.move(L);//每个球动一下
-                ArrayList<Ball> newballs = new ArrayList<>(balls);
-                newballs.remove(ball);//除了自己的别的球
-                for (Ball other : newballs) {
-                    if (ball.pos == other.pos)//两球相撞
+                //每个球动一下
+                ball.move(L);
+                //复制一份小球列表
+                ArrayList<Ball> others = new ArrayList<>(balls);
+                //删除自己
+                others.remove(ball);
+                //遍历别的小球查看是否相撞了
+                for (Ball other : others) {
+                    //两球相撞都反向
+                    if (ball.pos == other.pos)
                     {
                         ball.reverse();
                         other.reverse();
@@ -27,45 +35,76 @@ public class csp_201803_2 {
 
             }
         }
+        //打印所有小球现在的位置
         for (int i = 0; i < n; i++) {
             System.out.print(balls.get(i).pos + " ");
         }
 
     }
 
-    enum oriation {LEFT, RIGHT}
+    /**
+     * 枚举类，代表左右的方向
+     */
+    enum oration {LEFT, RIGHT}
 
     private static class Ball {
-        oriation vec;
+        /**
+         * 方向
+         */
+        oration vec;
+        /**
+         * 位置
+         */
         int pos;
 
+        /**
+         * 构造函数初始化起始位置和往右的方向
+         *
+         * @param pos 初始坐标
+         */
         Ball(int pos) {
             this.pos = pos;
-            vec = oriation.RIGHT;
+            vec = oration.RIGHT;
         }
 
+        /**
+         * 进行移动
+         * @param L 线段长度
+         */
         public void move(int L) {
             switch (vec) {
                 case LEFT:
+                    //如果移动的时候撞墙了就转向
                     if (this.pos == 0) {
                         this.reverse();
                         pos++;
-                    } else
+                    } else {
                         pos--;
+                    }
                     break;
                 case RIGHT:
+                    //如果移动的时候撞墙了就转向
                     if (this.pos == L) {
                         this.reverse();
                         pos--;
-                    } else pos++;
+                    } else {
+                        pos++;
+                    }
+                    break;
+                default:
                     break;
             }
         }
 
+        /**
+         * 转向
+         */
         private void reverse() {
-            if (this.vec == oriation.RIGHT)
-                this.vec = oriation.LEFT;
-            else this.vec = oriation.RIGHT;
+            if (this.vec == oration.RIGHT) {
+                this.vec = oration.LEFT;
+            } else {
+                this.vec = oration.RIGHT;
+            }
         }
     }
 }
