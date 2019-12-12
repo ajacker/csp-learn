@@ -1,10 +1,10 @@
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.StreamTokenizer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Stack;
-import java.util.StringTokenizer;
 
 /**
  * @author ajacker
@@ -16,10 +16,13 @@ public class csp_201512_4 {
     static int[] father;
     static boolean[][] isVisited;
     static Stack<Integer> path = new Stack<>();
+    static StreamTokenizer in = new StreamTokenizer(new BufferedReader(new InputStreamReader(System.in)));
 
-    public static void main(String[] args) {
-        n = InputReader.nextInt();
-        m = InputReader.nextInt();
+    public static void main(String[] args) throws IOException {
+        in.nextToken();
+        n = (int) in.nval;
+        in.nextToken();
+        m = (int) in.nval;
         map = new ArrayList[n + 1];
         isVisited = new boolean[n + 1][n + 1];
         father = new int[n + 1];
@@ -28,8 +31,10 @@ public class csp_201512_4 {
             father[i] = i;
         }
         for (int i = 0; i < m; i++) {
-            int a = InputReader.nextInt();
-            int b = InputReader.nextInt();
+            in.nextToken();
+            int a = (int) in.nval;
+            in.nextToken();
+            int b = (int) in.nval;
             //添加无向边
             map[a].add(b);
             map[b].add(a);
@@ -142,24 +147,4 @@ public class csp_201512_4 {
         return count == 0;
     }
 
-    static class InputReader {
-        private static BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-        private static StringTokenizer tokenizer = null;
-
-        public static String next() {
-            while (tokenizer == null || !tokenizer.hasMoreTokens()) {
-                try {
-                    tokenizer = new StringTokenizer(reader.readLine());
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-            return tokenizer.nextToken();
-        }
-
-        public static int nextInt() {
-            return Integer.parseInt(next());
-        }
-
-    }
 }
