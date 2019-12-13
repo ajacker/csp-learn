@@ -2,6 +2,10 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StreamTokenizer;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.PriorityQueue;
+import java.util.Queue;
 
 /**
  * @author ajacker
@@ -9,6 +13,7 @@ import java.io.StreamTokenizer;
  */
 public class csp_201712_4 {
     static StreamTokenizer in = new StreamTokenizer(new BufferedReader(new InputStreamReader(System.in)));
+    final static double INF = Double.MAX_VALUE;
 
     public static void main(String[] args) throws IOException {
         in.nextToken();
@@ -16,7 +21,15 @@ public class csp_201712_4 {
         in.nextToken();
         int m = (int) in.nval;
         //载入邻接矩阵存储的图
-        Road[][] map = new Road[n + 1][n + 1];
+        double[][] map1 = new double[n + 1][n + 1];
+        double[][] map2 = new double[n + 1][n + 1];
+        for (int i = 1; i <= n; i++) {
+            for (int j = 1; j <= n; j++) {
+                double value = i == j ? 0 : INF;
+                map1[i][j] = value;
+                map2[i][j] = value;
+            }
+        }
         for (int i = 1; i <= m; i++) {
             in.nextToken();
             int t = (int) in.nval;
@@ -26,147 +39,146 @@ public class csp_201712_4 {
             int b = (int) in.nval;
             in.nextToken();
             double c = in.nval;
-            Road road = new Road(t, c);
-            map[a][b] = road;
-            map[b][a] = road;
+            if (t == 0) {
+                map1[a][b] = c;
+                map1[b][a] = c;
+            } else {
+                map2[a][b] = c;
+                map2[b][a] = c;
+            }
         }
-        System.out.printf("%.0f", dijkstra(n, map));
+        floyd(map1);
+        floyd(map2);
+        spfa(map1, map2);
+        //dijstra(map1, map2);
+    }
+
+    private static void spfa(double[][] map1, double[][] map2) {
+        int len = map1.length;
+        Queue<Integer> queue = new LinkedList<>();
+        boolean[] inQueue = new boolean[len];
+        double[] dis1 = new double[len];
+        double[] dis2 = new double[len];
+        Arrays.fill(dis1, INF);
+        Arrays.fill(dis2, INF);
+        dis1[1] = 0;
+        dis2[1] = 0;
+        queue.offer(1);
+        inQueue[1] = true;
+        while (!queue.isEmpty()) {
+            int u = queue.poll();
+            inQueue[u] = false;
+            for (int v = 1; v < len; v++) {
+                if (u != v) {
+                    boolean offer = false;
+                    if (map1[u][v] < INF) {
+                        //大路更新最短路(可以用小路更新，因为大路可以走大路或者小路)
+                        if (dis1[u] + map1[u][v] < dis1[v] || dis2[u] + map1[u][v] < dis1[v]) {
+                            dis1[v] = Math.min(dis1[u] + map1[u][v], dis2[u] + map1[u][v]);
+                            offer = true;
+                        }
+                    }
+                    if (map2[u][v] < INF) {
+                        //小路更新最短路，上一步只可能是大路
+                        if (dis1[u] + map2[u][v] * map2[u][v] < dis2[v]) {
+                            dis2[v] = dis1[u] + map2[u][v] * map2[u][v];
+                            offer = true;
+                        }
+                    }
+                    if (!inQueue[v] && offer) {
+                        inQueue[v] = true;
+                        queue.offer(v);
+                    }
+                }
+
+            }
+        }
+        System.out.printf("%.0f\n", Math.min(dis1[len - 1], dis2[len - 1]));
     }
 
     /**
-     * dijkstra查找最短路径
+     * 小路走了只能走大路了
      *
-     * @param n   点的个数
-     * @param map 邻接矩阵存储的图
-     * @return 最小疲劳值
+     * @param map1 大路
+     * @param map2 小路
      */
-    private static double dijkstra(int n, Road[][] map) {
-        // 定义一维数组用来存储v1到每个点的最短路径，找到比原来更短的则直接覆盖
-        Route[] paths = new Route[n + 1];
-        //保存是否访问过
-        boolean[] isVisited = new boolean[n + 1];
-        //初始化最短路径
-        for (int i = 2; i <= n; i++) {
-            Route route = new Route();
-            if (map[1][i] != null) {
-                route.add(map[1][i]);
-            } else {
-                route.tired = Double.MAX_VALUE;
-            }
-            paths[i] = route;
-        }
-        isVisited[1] = true;
-        for (int i = 2; i <= n; i++) {
-            // 在已经存在的路径中找到一条未被访问且最短的路径
-            double min = Double.MAX_VALUE;
-            int minIndex = -1;
-            for (int j = 2; j <= n; j++) {
-                if (!isVisited[j] && paths[j].tired < min) {
-                    min = paths[j].tired;
-                    minIndex = j;
+    private static void dijstra(double[][] map1, double[][] map2) {
+        int len = map1.length;
+        //标记是否求出最短路径
+        boolean[] solved = new boolean[len];
+        double[] dis = new double[len];
+        Arrays.fill(dis, INF);
+        PriorityQueue<Road> queue = new PriorityQueue<>();
+        queue.offer(new Road(1, 0));
+        dis[1] = 0;
+        while (!queue.isEmpty()) {
+            Road cur = queue.poll();
+            int u = cur.v;
+            if (!solved[u]) {
+                solved[u] = true;
+                for (int v = 1; v < len; v++) {
+                    if (u == v) {
+                        continue;
+                    }
+                    if (cur.little) {
+                        //上一个走了小路这一个只能走大路
+                        if (map1[u][v] != INF && !solved[v] && map1[u][v] + dis[u] < dis[v]) {
+                            dis[v] = map1[u][v] + dis[u];
+                            queue.offer(new Road(v, dis[v]));
+                        }
+                    } else {
+                        if (map1[u][v] != INF || map2[u][v] != INF) {
+                            //true代表选择小路
+                            boolean flag;
+                            flag = map1[u][v] == INF || map1[u][v] > map2[u][v] * map2[u][v];
+                            double d = Math.min(map1[u][v], map2[u][v] * map2[u][v]);
+                            if (!solved[v] && d + dis[u] < dis[v]) {
+                                dis[v] = d + dis[u];
+                                Road next = new Road(v, dis[v]);
+                                next.little = flag;
+                                queue.offer(next);
+                            }
+                        }
+                    }
                 }
             }
-            //如果找不到就跳过
-            if (minIndex == -1) {
-                continue;
-            }
-            isVisited[minIndex] = true;
-            // 找到的最短路径节点的可使用边中，判断是否比已经存在的最短路径短，是则进行覆盖
-            for (int k = 2; k <= n; k++) {
-                Route minRoute = new Route(paths[minIndex]);
-                if (!isVisited[k] && (minRoute.addPrev(map[minIndex][k]) < paths[k].tired)) {
-                    paths[k] = minRoute.add(map[minIndex][k]);
-                }
-            }
+
         }
-        return paths[n].tired;
+        System.out.printf("%.0f", dis[len - 1]);
     }
 
-    static class Road {
-        /**
-         * 道路类型，0大道1小道
-         */
-        int type;
+    private static void floyd(double[][] dis) {
+        int len = dis.length;
+        for (int k = 1; k < len; k++) {
+            for (int i = 1; i < len; i++) {
+                for (int j = 1; j < len; j++) {
+                    double tmp = (dis[i][k] == INF || dis[k][j] == INF) ? INF : (dis[i][k] + dis[k][j]);
+                    if (tmp < dis[i][j]) {
+                        dis[i][j] = tmp;
+                    }
+                }
+            }
+        }
+    }
+
+    static class Road implements Comparable<Road> {
+        boolean little;
+        int v;
         /**
          * 道路长度
          */
-        double length;
-
-        Road(int type, double length) {
-            this.type = type;
-            this.length = length;
-        }
-
-        @Override
-        public String toString() {
-            return "" + length;
-        }
-    }
-
-    static class Route {
-        /**
-         * 连续小道的长度
-         */
-        double littleRoad;
-        /**
-         * 疲劳度
-         */
         double tired;
 
-        Route() {
+        Road(int v, double length) {
+            this.v = v;
+            this.tired = length;
         }
 
-        Route(Route route) {
-            this.tired = route.tired;
-            this.littleRoad = route.littleRoad;
-        }
 
-        /**
-         * 添加路径
-         *
-         * @param road 路径
-         * @return 自己
-         */
-        Route add(Road road) {
-            if (road == null) {
-                tired = Double.MAX_VALUE;
-                return this;
-            }
-            if (road.type == 0) {
-                tired += road.length;
-                littleRoad = 0;
-            } else {
-                //除了本节点外的连续小道长度
-                double prevLittleRoad = littleRoad;
-                //到目前为止的连续小道长度
-                littleRoad += road.length;
-                tired = tired - prevLittleRoad * prevLittleRoad + littleRoad * littleRoad;
-            }
-            return this;
+        @Override
+        public int compareTo(Road o) {
+            return Double.compare(this.tired, o.tired);
         }
-
-        /**
-         * 看看添加路径后的疲劳值（实际上没有添加）
-         *
-         * @param road 路径
-         * @return 假设添加这段路径后的疲劳值
-         */
-        double addPrev(Road road) {
-            if (road == null) {
-                return Double.MAX_VALUE;
-            }
-            double temp = tired;
-            if (road.type == 0) {
-                temp += road.length;
-            } else {
-                //除了本节点外的连续小道长度
-                double prevLittleRoad = littleRoad;
-                //到目前为止的连续小道长度
-                double tmp = littleRoad + road.length;
-                temp = temp - prevLittleRoad * prevLittleRoad + tmp * tmp;
-            }
-            return temp;
-        }
-
     }
+
 }
