@@ -12,6 +12,9 @@ import java.util.Queue;
  * 最短路径 迪杰斯特拉
  */
 public class csp_201712_4 {
+    /**
+     * 速读
+     */
     static StreamTokenizer in = new StreamTokenizer(new BufferedReader(new InputStreamReader(System.in)));
     final static double INF = Double.MAX_VALUE;
 
@@ -25,6 +28,7 @@ public class csp_201712_4 {
         double[][] map2 = new double[n + 1][n + 1];
         for (int i = 1; i <= n; i++) {
             for (int j = 1; j <= n; j++) {
+                //初始化邻接矩阵，斜边为0，默认最大值
                 double value = i == j ? 0 : INF;
                 map1[i][j] = value;
                 map2[i][j] = value;
@@ -39,18 +43,24 @@ public class csp_201712_4 {
             int b = (int) in.nval;
             in.nextToken();
             double c = in.nval;
+            ///判断道路类型加入不同的图中，map1是大路，map2是小路
+            //注意：有重边，保留最小的
             if (t == 0) {
-                map1[a][b] = c;
-                map1[b][a] = c;
+                if (map1[a][b] == 0 || map1[a][b] > c) {
+                    map1[a][b] = c;
+                    map1[b][a] = c;
+                }
             } else {
-                map2[a][b] = c;
-                map2[b][a] = c;
+                if (map2[a][b] == 0 || map2[a][b] > c) {
+                    map2[a][b] = c;
+                    map2[b][a] = c;
+                }
             }
         }
+        //使用Floyd算法将两个图分别计算出最短路径
         floyd(map1);
         floyd(map2);
-        spfa(map1, map2);
-        //dijstra(map1, map2);
+        dijstra(map1, map2);
     }
 
     private static void spfa(double[][] map1, double[][] map2) {
@@ -97,7 +107,7 @@ public class csp_201712_4 {
     }
 
     /**
-     * 小路走了只能走大路了
+     * dij算法
      *
      * @param map1 大路
      * @param map2 小路
@@ -105,56 +115,67 @@ public class csp_201712_4 {
     private static void dijstra(double[][] map1, double[][] map2) {
         int len = map1.length;
         //标记是否求出最短路径
-        boolean[] solved = new boolean[len];
-        double[] dis = new double[len];
-        Arrays.fill(dis, INF);
+        boolean[][] solved = new boolean[2][len];
+        //记录最短距离
+        double[][] dis = new double[2][len];
+        //最短距离默认为最大值
+        Arrays.fill(dis[0], INF);
+        Arrays.fill(dis[1], INF);
         PriorityQueue<Road> queue = new PriorityQueue<>();
-        queue.offer(new Road(1, 0));
-        dis[1] = 0;
+        //加入优先队列
+        queue.offer(new Road(0, 1, 0));
+        queue.offer(new Road(1, 1, 0));
+        dis[0][1] = 0;
+        dis[1][1] = 0;
         while (!queue.isEmpty()) {
+            //取出起始点
             Road cur = queue.poll();
             int u = cur.v;
-            if (!solved[u]) {
-                solved[u] = true;
+            int i = cur.type;
+            if (!solved[i][u]) {
+                solved[i][u] = true;
+                //以u点开头查找最短路径
                 for (int v = 1; v < len; v++) {
                     if (u == v) {
                         continue;
                     }
-                    if (cur.little) {
+                    if (cur.type == 1) {
                         //上一个走了小路这一个只能走大路
-                        if (map1[u][v] != INF && !solved[v] && map1[u][v] + dis[u] < dis[v]) {
-                            dis[v] = map1[u][v] + dis[u];
-                            queue.offer(new Road(v, dis[v]));
+                        if (map1[u][v] != INF && !solved[0][v] && map1[u][v] + dis[1][u] < dis[0][v]) {
+                            dis[0][v] = map1[u][v] + dis[1][u];
+                            queue.offer(new Road(0, v, dis[0][v]));
                         }
                     } else {
-                        if (map1[u][v] != INF || map2[u][v] != INF) {
-                            //true代表选择小路
-                            boolean flag;
-                            flag = map1[u][v] == INF || map1[u][v] > map2[u][v] * map2[u][v];
-                            double d = Math.min(map1[u][v], map2[u][v] * map2[u][v]);
-                            if (!solved[v] && d + dis[u] < dis[v]) {
-                                dis[v] = d + dis[u];
-                                Road next = new Road(v, dis[v]);
-                                next.little = flag;
-                                queue.offer(next);
-                            }
+                        //上一个走的大路这一段可以用小路也可以用大路来缩短最小距离
+                        if (map2[u][v] != INF && !solved[1][v] && map2[u][v] * map2[u][v] + dis[0][u] < dis[1][v]) {
+                            dis[1][v] = map2[u][v] * map2[u][v] + dis[0][u];
+                            queue.offer(new Road(1, v, dis[1][v]));
+                        }
+                        if (map1[u][v] != INF && !solved[0][v] && map1[u][v] + dis[0][u] < dis[0][v]) {
+                            dis[0][v] = map1[u][v] + dis[0][u];
+                            queue.offer(new Road(0, v, dis[0][v]));
                         }
                     }
+
+
                 }
             }
-
         }
-        System.out.printf("%.0f", dis[len - 1]);
+        //输出结果
+        System.out.printf("%.0f", Math.min(dis[0][len - 1], dis[1][len - 1]));
     }
 
     private static void floyd(double[][] dis) {
         int len = dis.length;
         for (int k = 1; k < len; k++) {
             for (int i = 1; i < len; i++) {
-                for (int j = 1; j < len; j++) {
-                    double tmp = (dis[i][k] == INF || dis[k][j] == INF) ? INF : (dis[i][k] + dis[k][j]);
+                double t = dis[i][k];
+                for (int j = 1; j <= i; j++) {
+                    //利用对称性优化
+                    double tmp = (t == INF || dis[k][j] == INF) ? INF : (t + dis[k][j]);
                     if (tmp < dis[i][j]) {
                         dis[i][j] = tmp;
+                        dis[j][i] = dis[i][j];
                     }
                 }
             }
@@ -162,15 +183,16 @@ public class csp_201712_4 {
     }
 
     static class Road implements Comparable<Road> {
-        boolean little;
+        int type;
         int v;
         /**
-         * 道路长度
+         * 疲劳度
          */
         double tired;
 
-        Road(int v, double length) {
+        Road(int type, int v, double length) {
             this.v = v;
+            this.type = type;
             this.tired = length;
         }
 
